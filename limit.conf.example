@@ -1,0 +1,15 @@
+[Account]
+host=imap.gmail.com
+port=993
+username=mailinglist.archive
+password=secret
+list=mailinglist@googlegroups.com
+
+[Limits]
+start_hour=8
+count=3
+
+# white/blacklist functionality not yet implemented
+[Exceptions]
+whitelist=False
+blacklist=False
