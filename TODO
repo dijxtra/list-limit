@@ -1,0 +1,5 @@
+BUGS:
+* if current time is before Config.get('Limits', 'start_hour'), get_author_freqs returns empty list (current cycle has not started yet)
+
+FEATURES:
+* whitelist/blacklist
