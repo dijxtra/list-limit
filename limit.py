@@ -1,3 +1,4 @@
+#-*- coding: utf-8 -*-
 """
 
 Module for warning mailing list members when they reach a daily limit
@@ -29,7 +30,7 @@ from time import mktime
 from email.parser import HeaderParser
 from email.utils import parseaddr, parsedate
 
-def get_author_freqs(server, port, username, password, list, start):
+def get_author_freqs(account, start):
     """Connect to IMAP mail server, retreive mails and create dictionary of author frequencies.
 
     Arguments:
@@ -37,8 +38,8 @@ def get_author_freqs(server, port, username, password, list, start):
     list -- address of mailing list in question as it would appear in RFC2822 To: filed
     start -- start of current cycle: we count emails sent after this moment in time
     """
-    M = imaplib.IMAP4_SSL(server, port)
-    M.login(username, password)
+    M = imaplib.IMAP4_SSL(account['server'], account['port'])
+    M.login(account['username'], account['password'])
     M.select()
     typ, data = M.search(None, '(SENTSINCE {date})'.format(date=start.strftime("%d-%b-%Y"))) #fetching emails sent after midnight (IMAP can search only by date, not by time)
 
@@ -54,7 +55,11 @@ def get_author_freqs(server, port, username, password, list, start):
         date = date_data[0][1]
 
         #check if this email was sent to the list in current cycle
-        if ((list == to) or (list == '')) and in_this_cycle(date, start):
+        try:
+            l = account['list']
+        except KeyError:
+            l = to
+        if (account['list'] == to) and in_this_cycle(date, start):
             freq[mail] += 1
 
     M.close()
@@ -92,33 +97,16 @@ def in_this_cycle(date, start):
 
     return mktime(date) > mktime(start.timetuple())
 
-def get_offenders(conf_file):
+def get_offenders(account, limits):
     """Return list of emails offending the "number of mails daily" limit on a given mailing list.
-
-    Arguments:
-    conf_file -- Configuration file containing all data needed to do the task"""
-    Config = ConfigParser.ConfigParser()
-    Config.read(conf_file)
-
-    host = Config.get('Account', 'host')
-    port = Config.getint('Account', 'port')
-    username = Config.get('Account', 'username')
-    password = Config.get('Account', 'password')
-    try:
-        list = Config.get('Account', 'list')
-    except ConfigParser.NoOptionError:
-        list =''
-
-    start_hour = Config.getint('Limits', 'start_hour')
-    limit = Config.getint('Limits', 'count')
+"""
+    start_time = get_start_time(int(limits['start_hour']))
     
-    start_time = get_start_time(start_hour)
-    
-    freqs = get_author_freqs(host, port, username, password, list, start_time)
+    freqs = get_author_freqs(account, start_time)
 
 #    print_leaderboard(freqs)
 
-    offenders = extract_offenders(freqs, limit)
+    offenders = extract_offenders(freqs, limits['count'])
     
     return offenders
 
@@ -129,7 +117,19 @@ def print_leaderboard(freqs):
         print f, freqs[f]
 
 def main():
-    offenders = get_offenders("limit.conf")
+    conf_file = "limit.conf"
+
+    Config = ConfigParser.ConfigParser()
+    Config.read(conf_file)
+    account = dict(Config.items('Account'))
+    limits = dict(Config.items('Limits'))
+
+    try:
+        list = Config.get('Account', 'list')
+    except ConfigParser.NoOptionError:
+        list =''
+
+    offenders = get_offenders(account, limits)
     print "Offenders:"
     for o in offenders:
         print o
