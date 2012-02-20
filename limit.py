@@ -160,7 +160,10 @@ def remove_already_warned(offenders, warned_file):
 def warn(to_be_warned, limits):
     print
     for t in to_be_warned:
-        print "Warning", t
+        f = open(limits['warning_file'], "r")
+        text = Template(f.read())
+        finished = text.substitute(email=t, limit=limits['count'])
+        print finished
 
     already_warned = pickle.load(open(limits['warned_file'], "rb"))
     already_warned.extend(to_be_warned)
