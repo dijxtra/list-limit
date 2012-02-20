@@ -106,7 +106,7 @@ def get_offenders(account, limits):
 
 #    print_leaderboard(freqs)
 
-    offenders = extract_offenders(freqs, limits['count'])
+    offenders = extract_offenders(freqs, int(limits['count']))
     
     return offenders
 
