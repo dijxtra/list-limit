@@ -30,6 +30,7 @@ from time import mktime
 from email.parser import HeaderParser
 from email.utils import parseaddr, parsedate
 from os.path import exists
+from string import Template
 
 def mock_get_author_freqs(account, start):
     return {'nskoric@gmail.com' : 3, 'burek@pita.net' : 4, 'john@microsoft.com' : 1, 'mike@microsoft.com' : 5}
@@ -156,15 +157,14 @@ def remove_already_warned(offenders, warned_file):
 
     return offenders
 
-def warn(to_be_warned, warned_file):
-
+def warn(to_be_warned, limits):
     print
     for t in to_be_warned:
         print "Warning", t
 
-    already_warned = pickle.load(open(warned_file, "rb"))
+    already_warned = pickle.load(open(limits['warned_file'], "rb"))
     already_warned.extend(to_be_warned)
-    pickle.dump(already_warned, open(warned_file, "wb" ))
+    pickle.dump(already_warned, open(limits['warned_file'], "wb" ))
 
     return
 
@@ -181,25 +181,25 @@ def main():
     except ConfigParser.NoOptionError:
         list =''
     try:
-        warned_file = Config.get('Limits', 'warned_file')
+        limits['warned_file'] = Config.get('Limits', 'warned_file')
     except ConfigParser.NoOptionError:
-        warned_file ='warned.list'
+        limits['warned_file'] ='warned.p'
 
     offenders = get_offenders(account, limits)
     print "Offenders:"
     for o in offenders:
         print o
 
-    cleanup_already_warned(offenders, warned_file)
+    cleanup_already_warned(offenders, limits['warned_file'])
 
-    to_be_warned = remove_already_warned(offenders, warned_file)
+    to_be_warned = remove_already_warned(offenders, limits['warned_file'])
     
     print
     print "Unwarned offenders:"
     for t in to_be_warned:
         print t
 
-    warn(to_be_warned, warned_file)
+    warn(to_be_warned, limits)
     
 if __name__ == "__main__":
     main()
