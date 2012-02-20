@@ -43,7 +43,7 @@ def get_author_freqs(account, start):
     list -- address of mailing list in question as it would appear in RFC2822 To: filed
     start -- start of current cycle: we count emails sent after this moment in time
     """
-    M = imaplib.IMAP4_SSL(account['server'], account['port'])
+    M = imaplib.IMAP4_SSL(account['host'], int(account['port']))
     M.login(account['username'], account['password'])
     M.select()
     typ, data = M.search(None, '(SENTSINCE {date})'.format(date=start.strftime("%d-%b-%Y"))) #fetching emails sent after midnight (IMAP can search only by date, not by time)
@@ -107,8 +107,8 @@ def get_offenders(account, limits):
 """
     start_time = get_start_time(int(limits['start_hour']))
     
-    freqs = mock_get_author_freqs(account, start_time)
-#    freqs = get_author_freqs(account, start_time)
+#    freqs = mock_get_author_freqs(account, start_time)
+    freqs = get_author_freqs(account, start_time)
 
 #    print_leaderboard(freqs)
 
