@@ -24,14 +24,15 @@ Please see the GPL license at http://www.gnu.org/licenses/gpl.txt
 
 To contact the author, see http://github.com/dijxtra/list-limit
 """
-import imaplib, collections, ConfigParser
+import imaplib, collections, ConfigParser, pickle
 from datetime import time, timedelta, datetime
 from time import mktime
 from email.parser import HeaderParser
 from email.utils import parseaddr, parsedate
+from os.path import exists
 
 def mock_get_author_freqs(account, start):
-    return {'nskoric@gmail.com' : 3, 'burek@pita' : 4}
+    return {'nskoric@gmail.com' : 3, 'burek@pita.net' : 4, 'john@microsoft.com' : 1, 'mike@microsoft.com' : 5}
 
 def get_author_freqs(account, start):
     """Connect to IMAP mail server, retreive mails and create dictionary of author frequencies.
@@ -120,10 +121,51 @@ def print_leaderboard(freqs):
     for f in sorted(freqs, key=freqs.get, reverse=True):
         print f, freqs[f]
 
+def cleanup_already_warned(offenders, warned_file):
+    if not exists(warned_file):
+        pickle.dump([], open(warned_file, "wb" ))
+        return
+
+    already_warned = pickle.load(open(warned_file, "rb"))
+
+    not_offending = []
+    for w in already_warned:
+        if w not in offenders:
+            not_offending.append(w)
+
+    if not not_offending: # list is empty
+        return
+
+    for n in not_offending:
+        already_warned.remove(n)
+
+    pickle.dump(already_warned, open(warned_file, "wb" ))
+
+    return
+
 def remove_already_warned(offenders, warned_file):
+    if not exists(warned_file):
+        pickle.dump([], open(warned_file, "wb" ))
+        already_warned = []
+    else:
+        already_warned = pickle.load(open(warned_file, "rb"))
+        print "Already warned:", already_warned
+
+    for w in already_warned:
+        offenders.remove(w.strip())
+
     return offenders
 
-def warn(to_be_warned):
+def warn(to_be_warned, warned_file):
+
+    print
+    for t in to_be_warned:
+        print "Warning", t
+
+    already_warned = pickle.load(open(warned_file, "rb"))
+    already_warned.extend(to_be_warned)
+    pickle.dump(already_warned, open(warned_file, "wb" ))
+
     return
 
 def main():
@@ -138,15 +180,26 @@ def main():
         list = Config.get('Account', 'list')
     except ConfigParser.NoOptionError:
         list =''
+    try:
+        warned_file = Config.get('Limits', 'warned_file')
+    except ConfigParser.NoOptionError:
+        warned_file ='warned.list'
 
     offenders = get_offenders(account, limits)
     print "Offenders:"
     for o in offenders:
         print o
 
-    to_be_warned = remove_already_warned(offenders, limits['warned_file'])
+    cleanup_already_warned(offenders, warned_file)
 
-    warn(to_be_warned)
+    to_be_warned = remove_already_warned(offenders, warned_file)
+    
+    print
+    print "Unwarned offenders:"
+    for t in to_be_warned:
+        print t
+
+    warn(to_be_warned, warned_file)
     
 if __name__ == "__main__":
     main()
