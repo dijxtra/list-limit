@@ -30,6 +30,9 @@ from time import mktime
 from email.parser import HeaderParser
 from email.utils import parseaddr, parsedate
 
+def mock_get_author_freqs(account, start):
+    return {'nskoric@gmail.com' : 3, 'burek@pita' : 4}
+
 def get_author_freqs(account, start):
     """Connect to IMAP mail server, retreive mails and create dictionary of author frequencies.
 
@@ -102,7 +105,8 @@ def get_offenders(account, limits):
 """
     start_time = get_start_time(int(limits['start_hour']))
     
-    freqs = get_author_freqs(account, start_time)
+    freqs = mock_get_author_freqs(account, start_time)
+#    freqs = get_author_freqs(account, start_time)
 
 #    print_leaderboard(freqs)
 
@@ -115,6 +119,12 @@ def print_leaderboard(freqs):
     print "Leaderboard:"
     for f in sorted(freqs, key=freqs.get, reverse=True):
         print f, freqs[f]
+
+def remove_already_warned(offenders, warned_file):
+    return offenders
+
+def warn(to_be_warned):
+    return
 
 def main():
     conf_file = "limit.conf"
@@ -133,6 +143,10 @@ def main():
     print "Offenders:"
     for o in offenders:
         print o
+
+    to_be_warned = remove_already_warned(offenders, limits['warned_file'])
+
+    warn(to_be_warned)
     
 if __name__ == "__main__":
     main()
