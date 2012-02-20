@@ -8,6 +8,7 @@ list=mailinglist@googlegroups.com
 [Limits]
 start_hour=8
 count=3
+warned_file=warned.p
 
 # white/blacklist functionality not yet implemented
 [Exceptions]
