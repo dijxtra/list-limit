@@ -27,7 +27,6 @@ To contact the author, see http://github.com/dijxtra/list-limit
 import imaplib, collections, ConfigParser, pickle
 from datetime import time, timedelta, datetime
 from time import mktime
-from email.parser import HeaderParser
 from email.utils import parseaddr, parsedate
 from os.path import exists
 from string import Template
@@ -60,11 +59,7 @@ def get_author_freqs(account, start):
         date = date_data[0][1]
 
         #check if this email was sent to the list in current cycle
-        try:
-            l = account['list']
-        except KeyError:
-            l = to
-        if (account['list'] == to) and in_this_cycle(date, start):
+        if (account['list'] == to or account['list'] == '') and in_this_cycle(date, start):
             freq[mail] += 1
 
     M.close()
@@ -180,9 +175,9 @@ def main():
     limits = dict(Config.items('Limits'))
 
     try:
-        list = Config.get('Account', 'list')
+        account['list'] = Config.get('Account', 'list')
     except ConfigParser.NoOptionError:
-        list =''
+        account['list'] =''
     try:
         limits['warned_file'] = Config.get('Limits', 'warned_file')
     except ConfigParser.NoOptionError:
