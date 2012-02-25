@@ -24,9 +24,10 @@ Please see the GPL license at http://www.gnu.org/licenses/gpl.txt
 
 To contact the author, see http://github.com/dijxtra/list-limit
 """
-import imaplib, collections, ConfigParser, pickle, sys
+import imaplib, collections, ConfigParser, pickle, sys, smtplib
 from datetime import time, timedelta, datetime
 from time import mktime
+from email.mime.text import MIMEText
 from email.utils import parseaddr, parsedate
 from os.path import exists
 from string import Template
@@ -170,17 +171,24 @@ def remove_already_warned(offenders, warned_file):
 
     return offenders
 
-def send_email(to, body, exceptions = None):
+def send_email(author, to, subject, body, exceptions = None):
     if exceptions is not None:
         if to in exceptions['blacklist']:
             return
 
         if exceptions['whitelist'] and not to in exceptions['whitelist']:
             return
-    
-    print "To:", to
-    print body
-    print "-----------------"
+
+    print "Sending \"", subject, "\" to", to
+        
+    msg = MIMEText(body)
+    msg['Subject'] = subject
+    msg['From'] = author
+    msg['To'] = to
+
+    s = smtplib.SMTP('localhost')
+    s.sendmail(author, [to], msg.as_string())
+    s.quit()
 
 def parse_exceptions(exceptions):
     whitelist = []
@@ -198,7 +206,7 @@ def parse_exceptions(exceptions):
     
     return {'whitelist': whitelist, 'blacklist': blacklist}
     
-def warn(to_be_warned, limits, exceptions):
+def warn(to_be_warned, limits, exceptions, account):
     lists = parse_exceptions(exceptions)
     
     if 'report_address' in limits:
@@ -214,8 +222,8 @@ def warn(to_be_warned, limits, exceptions):
         warning = text.substitute(to=t, email=t, limit=limits['count'])
         if report_template is not None:
             report = report_template.substitute(to=report_email, email=t, limit=limits['count'])
-            send_email(report_email, report)
-        send_email(t, warning, lists)
+            send_email(account['email'], report_email, "Report", report)
+        send_email(account['email'], t, "Warning", warning, lists)
 
     already_warned = pickle.load(open(limits['warned_file'], "rb"))
     already_warned.extend(to_be_warned)
@@ -246,7 +254,7 @@ def main():
     for t in to_be_warned:
         print t
 
-    warn(to_be_warned, limits, exceptions)
+    warn(to_be_warned, limits, exceptions, account)
     
 if __name__ == "__main__":
     main()

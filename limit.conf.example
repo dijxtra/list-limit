@@ -2,6 +2,7 @@
 host=imap.gmail.com
 port=993
 username=mailinglist.archive
+email=mailinglist.owner@gmail.com
 password=secret
 list=mailinglist@googlegroups.com
 
