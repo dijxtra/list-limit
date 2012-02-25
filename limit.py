@@ -24,12 +24,29 @@ Please see the GPL license at http://www.gnu.org/licenses/gpl.txt
 
 To contact the author, see http://github.com/dijxtra/list-limit
 """
-import imaplib, collections, ConfigParser, pickle
+import imaplib, collections, ConfigParser, pickle, sys
 from datetime import time, timedelta, datetime
 from time import mktime
 from email.utils import parseaddr, parsedate
 from os.path import exists
 from string import Template
+
+def parse_conf(conf_file = "limit.conf"):
+    Config = ConfigParser.ConfigParser()
+    Config.read(conf_file)
+    account = dict(Config.items('Account'))
+    limits = dict(Config.items('Limits'))
+
+    try:
+        account['list'] = Config.get('Account', 'list')
+    except ConfigParser.NoOptionError:
+        account['list'] =''
+    try:
+        limits['warned_file'] = Config.get('Limits', 'warned_file')
+    except ConfigParser.NoOptionError:
+        limits['warned_file'] ='warned.p'
+
+    return limits, account
 
 def mock_get_author_freqs(account, start):
     return {'nskoric@gmail.com' : 3, 'burek@pita.net' : 4, 'john@microsoft.com' : 1, 'mike@microsoft.com' : 5}
@@ -167,21 +184,13 @@ def warn(to_be_warned, limits):
     return
 
 def main():
-    conf_file = "limit.conf"
+    if (len(sys.argv) > 1):
+        conf_file = sys.argv[1]
+    else:
+        print "Usage: python limit.py CONF_FILE"
+        exit()
 
-    Config = ConfigParser.ConfigParser()
-    Config.read(conf_file)
-    account = dict(Config.items('Account'))
-    limits = dict(Config.items('Limits'))
-
-    try:
-        account['list'] = Config.get('Account', 'list')
-    except ConfigParser.NoOptionError:
-        account['list'] =''
-    try:
-        limits['warned_file'] = Config.get('Limits', 'warned_file')
-    except ConfigParser.NoOptionError:
-        limits['warned_file'] ='warned.p'
+    limits, account = parse_conf(conf_file)
 
     offenders = get_offenders(account, limits)
     print "Offenders:"
