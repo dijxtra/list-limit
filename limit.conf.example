@@ -13,7 +13,6 @@ warning_file=warning.eml
 report_address=mailinglist.owner@gmail.com
 report_file=report.eml
 
-# white/blacklist functionality not yet implemented
 [Exceptions]
-whitelist=False
-blacklist=False
+#whitelist_file=whitelist.txt
+#blacklist_file=blacklist.txt

@@ -36,6 +36,7 @@ def parse_conf(conf_file = "limit.conf"):
     Config.read(conf_file)
     account = dict(Config.items('Account'))
     limits = dict(Config.items('Limits'))
+    exceptions = dict(Config.items('Exceptions'))
 
     try:
         account['list'] = Config.get('Account', 'list')
@@ -46,7 +47,7 @@ def parse_conf(conf_file = "limit.conf"):
     except ConfigParser.NoOptionError:
         limits['warned_file'] ='warned.p'
 
-    return limits, account
+    return limits, account, exceptions
 
 def mock_get_author_freqs(account, start):
     return {'nskoric@gmail.com' : 3, 'burek@pita.net' : 4, 'john@microsoft.com' : 1, 'mike@microsoft.com' : 5}
@@ -169,12 +170,37 @@ def remove_already_warned(offenders, warned_file):
 
     return offenders
 
-def send_email(to, body):
+def send_email(to, body, exceptions = None):
+    if exceptions is not None:
+        if to in exceptions['blacklist']:
+            return
+
+        if exceptions['whitelist'] and not to in exceptions['whitelist']:
+            return
+    
     print "To:", to
     print body
     print "-----------------"
 
-def warn(to_be_warned, limits):
+def parse_exceptions(exceptions):
+    whitelist = []
+    blacklist = []
+
+    if 'whitelist_file' in exceptions and exists(exceptions['whitelist_file']):
+        f = open(exceptions['whitelist_file'], 'r')
+        whitelist = filter(lambda l: l != '', map(lambda line: line.strip(), f.readlines()))
+        f.close()
+    
+    if 'blacklist_file' in exceptions and exists(exceptions['blacklist_file']):
+        f = open(exceptions['blacklist_file'], 'r')
+        blacklist = filter(lambda l: l != '', map(lambda line: line.strip(), f.readlines()))
+        f.close()
+    
+    return {'whitelist': whitelist, 'blacklist': blacklist}
+    
+def warn(to_be_warned, limits, exceptions):
+    lists = parse_exceptions(exceptions)
+    
     if 'report_address' in limits:
         f = open(limits['report_file'], "r")
         report_template = Template(f.read())
@@ -189,7 +215,7 @@ def warn(to_be_warned, limits):
         if report_template is not None:
             report = report_template.substitute(to=report_email, email=t, limit=limits['count'])
             send_email(report_email, report)
-        send_email(t, warning)
+        send_email(t, warning, lists)
 
     already_warned = pickle.load(open(limits['warned_file'], "rb"))
     already_warned.extend(to_be_warned)
@@ -204,7 +230,7 @@ def main():
         print "Usage: python limit.py CONF_FILE"
         exit()
 
-    limits, account = parse_conf(conf_file)
+    limits, account, exceptions = parse_conf(conf_file)
 
     offenders = get_offenders(account, limits)
     print "Offenders:"
@@ -220,7 +246,7 @@ def main():
     for t in to_be_warned:
         print t
 
-    warn(to_be_warned, limits)
+    warn(to_be_warned, limits, exceptions)
     
 if __name__ == "__main__":
     main()
