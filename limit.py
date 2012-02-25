@@ -169,13 +169,27 @@ def remove_already_warned(offenders, warned_file):
 
     return offenders
 
+def send_email(to, body):
+    print "To:", to
+    print body
+    print "-----------------"
+
 def warn(to_be_warned, limits):
-    print
+    if 'report_address' in limits:
+        f = open(limits['report_file'], "r")
+        report_template = Template(f.read())
+        report_email = limits['report_address']
+    else:
+        report_template = None
+        
     for t in to_be_warned:
         f = open(limits['warning_file'], "r")
         text = Template(f.read())
-        finished = text.substitute(email=t, limit=limits['count'])
-        print finished
+        warning = text.substitute(to=t, email=t, limit=limits['count'])
+        if report_template is not None:
+            report = report_template.substitute(to=report_email, email=t, limit=limits['count'])
+            send_email(report_email, report)
+        send_email(t, warning)
 
     already_warned = pickle.load(open(limits['warned_file'], "rb"))
     already_warned.extend(to_be_warned)
