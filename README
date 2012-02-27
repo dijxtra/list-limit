@@ -5,4 +5,4 @@ Running the code
 
 1. mv limit.conf.example limit.conf
 2. Edit limit.conf to your liking
-3. Put "python limit.py limit.conf" in your crontab file
+3. Put "python limit.py -c limit.conf" in your crontab file
