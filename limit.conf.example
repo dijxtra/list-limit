@@ -26,5 +26,6 @@ report_file=report.eml
 #blacklist_file=blacklist.txt
 
 [Logging]
+# DEBUG | INFO | WARNING
+log_level=DEBUG
 log_file=limit.log
-log_level=DEBUG # DEBUG | INFO | WARNING
