@@ -2,7 +2,6 @@
 host=imap.gmail.com
 port=993
 username=mailinglist.archive
-email=mailinglist.owner@gmail.com
 password=secret
 list=mailinglist@googlegroups.com
 
@@ -10,8 +9,8 @@ list=mailinglist@googlegroups.com
 host=smtp.gmail.com
 port=587
 username=mailinglist.archive
-email=mailinglist.owner@gmail.com
 password=secret
+email=mailinglist.owner@gmail.com
 
 [Limits]
 start_hour=8
