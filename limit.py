@@ -39,6 +39,7 @@ def parse_conf(conf_file = "limit.conf"):
     outgoing = dict(Config.items('Outgoing'))
     limits = dict(Config.items('Limits'))
     exceptions = dict(Config.items('Exceptions'))
+    log = dict(Config.items('Logging'))
 
     try:
         account['list'] = Config.get('Account', 'list')
@@ -49,7 +50,7 @@ def parse_conf(conf_file = "limit.conf"):
     except ConfigParser.NoOptionError:
         limits['warned_file'] ='warned.p'
 
-    return account, outgoing, limits, exceptions
+    return account, outgoing, limits, exceptions, log
 
 def mock_get_author_freqs(account, start):
     return {'nskoric@gmail.com' : 3, 'burek@pita.net' : 4, 'john@microsoft.com' : 1, 'mike@microsoft.com' : 5}
@@ -247,15 +248,19 @@ def main():
         print "Usage: python limit.py CONF_FILE"
         exit()
 
+    account, outgoing, limits, exceptions, log = parse_conf(conf_file)
+
+    numeric_level = getattr(logging, log['log_level'].upper(), None)
+    if not isinstance(numeric_level, int):
+        raise ValueError('Invalid log level: {0}'.format(log['log_level']))
+
     logging.basicConfig(
         format='[%(asctime)s] %(levelname)s:%(message)s',
-        filename='limit.log',
-        level=logging.INFO)
+        filename=log['log_file'],
+        level=numeric_level)
 
     logging.debug('Started list-limit.')
     
-    account, outgoing, limits, exceptions = parse_conf(conf_file)
-
     offenders = get_offenders(account, limits)
     logging.debug("Offenders: {0}.".format(offenders))
 

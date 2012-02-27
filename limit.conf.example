@@ -24,3 +24,7 @@ report_file=report.eml
 [Exceptions]
 #whitelist_file=whitelist.txt
 #blacklist_file=blacklist.txt
+
+[Logging]
+log_file=limit.log
+log_level=DEBUG # DEBUG | INFO | WARNING
