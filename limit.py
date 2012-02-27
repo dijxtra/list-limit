@@ -24,7 +24,7 @@ Please see the GPL license at http://www.gnu.org/licenses/gpl.txt
 
 To contact the author, see http://github.com/dijxtra/list-limit
 """
-import imaplib, collections, ConfigParser, pickle, sys, smtplib, logging
+import imaplib, collections, ConfigParser, pickle, sys, smtplib, logging, optparse
 from datetime import time, timedelta, datetime
 from time import mktime
 from email.mime.text import MIMEText
@@ -242,10 +242,16 @@ def warn(to_be_warned, limits, exceptions, account, outgoing):
     return
 
 def main():
-    if (len(sys.argv) > 1):
-        conf_file = sys.argv[1]
-    else:
-        print "Usage: python limit.py CONF_FILE"
+    argparser = optparse.OptionParser(description='Warn people who write too much.')
+
+    argparser.add_option('-c', '--conf_file', dest='conf_file', help='path to config file')
+
+    (options, args) = argparser.parse_args()
+
+    conf_file = options.conf_file
+
+    if not conf_file:
+        argparser.print_help()
         exit()
 
     account, outgoing, limits, exceptions, log = parse_conf(conf_file)
