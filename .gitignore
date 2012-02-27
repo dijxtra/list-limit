@@ -4,3 +4,4 @@ limit.conf
 warned.p
 blacklist.txt
 whitelist.txt
+*.log

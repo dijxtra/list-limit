@@ -24,7 +24,7 @@ Please see the GPL license at http://www.gnu.org/licenses/gpl.txt
 
 To contact the author, see http://github.com/dijxtra/list-limit
 """
-import imaplib, collections, ConfigParser, pickle, sys, smtplib
+import imaplib, collections, ConfigParser, pickle, sys, smtplib, logging
 from datetime import time, timedelta, datetime
 from time import mktime
 from email.mime.text import MIMEText
@@ -165,7 +165,7 @@ def remove_already_warned(offenders, warned_file):
         already_warned = []
     else:
         already_warned = pickle.load(open(warned_file, "rb"))
-        print "Already warned:", already_warned
+        logging.debug("Already warned: {0}".format(already_warned))
 
     for w in already_warned:
         offenders.remove(w.strip())
@@ -180,7 +180,7 @@ def send_email(to, subject, body, outgoing, exceptions = None):
         if exceptions['whitelist'] and not to in exceptions['whitelist']:
             return
 
-    print "Sending \"", subject, "\" to", to
+    logging.info("Sending {subject} to {email}.".format(subject, to))
 
     msg = MIMEText(body)
     msg['Subject'] = subject
@@ -210,6 +210,10 @@ def parse_exceptions(exceptions):
     return {'whitelist': whitelist, 'blacklist': blacklist}
     
 def warn(to_be_warned, limits, exceptions, account, outgoing):
+    if not to_be_warned:
+        logging.debug('Nobody to be warned')
+        return
+    
     lists = parse_exceptions(exceptions)
     
     if 'report_address' in limits:
@@ -225,7 +229,9 @@ def warn(to_be_warned, limits, exceptions, account, outgoing):
         warning = text.substitute(to=t, email=t, limit=limits['count'])
         if report_template is not None:
             report = report_template.substitute(to=report_email, email=t, limit=limits['count'])
+            logging.info('Sending report about user {email}'.format(email=t))
             send_email(report_email, "Report", report, outgoing)
+        logging.info('Sending warning to user {email}'.format(email=t))
         send_email(t, "Warning", warning, outgoing, lists)
 
     already_warned = pickle.load(open(limits['warned_file'], "rb"))
@@ -241,23 +247,27 @@ def main():
         print "Usage: python limit.py CONF_FILE"
         exit()
 
+    logging.basicConfig(
+        format='[%(asctime)s] %(levelname)s:%(message)s',
+        filename='limit.log',
+        level=logging.INFO)
+
+    logging.debug('Started list-limit.')
+    
     account, outgoing, limits, exceptions = parse_conf(conf_file)
 
     offenders = get_offenders(account, limits)
-    print "Offenders:"
-    for o in offenders:
-        print o
+    logging.debug("Offenders: {0}.".format(offenders))
+
 
     cleanup_already_warned(offenders, limits['warned_file'])
 
     to_be_warned = remove_already_warned(offenders, limits['warned_file'])
-    
-    print
-    print "Unwarned offenders:"
-    for t in to_be_warned:
-        print t
+
+    logging.info("Unwarned offenders: {0}".format(to_be_warned))
 
     warn(to_be_warned, limits, exceptions, account, outgoing)
+    logging.debug('Ending list-limit.')
     
 if __name__ == "__main__":
     main()
