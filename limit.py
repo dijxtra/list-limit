@@ -24,7 +24,7 @@ Please see the GPL license at http://www.gnu.org/licenses/gpl.txt
 
 To contact the author, see http://github.com/dijxtra/list-limit
 """
-import imaplib, collections, ConfigParser, pickle, sys, smtplib, logging, optparse
+import imaplib, collections, ConfigParser, pickle, smtplib, logging, optparse
 from datetime import time, timedelta, datetime
 from time import mktime
 from email.mime.text import MIMEText
@@ -33,6 +33,7 @@ from os.path import exists
 from string import Template
 
 def parse_conf(conf_file = "limit.conf"):
+    """Parses config file passed as parameter and returns it's sections as dictionaries."""
     Config = ConfigParser.ConfigParser()
     Config.read(conf_file)
     account = dict(Config.items('Account'))
@@ -52,7 +53,8 @@ def parse_conf(conf_file = "limit.conf"):
 
     return account, outgoing, limits, exceptions, log
 
-def mock_get_author_freqs(account, start):
+def stub_get_author_freqs(account, start):
+    """A stub returning what get_autho_freqs would return. Used for testing when Internet connection is not available."""
     return {'nskoric@gmail.com' : 3, 'burek@pita.net' : 4, 'john@microsoft.com' : 1, 'mike@microsoft.com' : 5}
 
 def get_author_freqs(account, start):
@@ -123,7 +125,7 @@ def get_offenders(account, limits):
 """
     start_time = get_start_time(int(limits['start_hour']))
     
-#    freqs = mock_get_author_freqs(account, start_time)
+#    freqs = stub_get_author_freqs(account, start_time)
     freqs = get_author_freqs(account, start_time)
 
 #    print_leaderboard(freqs)
@@ -139,6 +141,11 @@ def print_leaderboard(freqs):
         print f, freqs[f]
 
 def cleanup_already_warned(offenders, warned_file):
+    """Remove addresses which are not offending anymore from list of already warned addresses. Addresses already warned are to be found in a file on a disk.
+
+    Arguments:
+    offenders -- list of email addresses which are currently offending the limit
+    warned_file -- path to a file which contains pickeled list of already warned email addresses."""
     if not exists(warned_file):
         pickle.dump([], open(warned_file, "wb" ))
         return
@@ -161,9 +168,15 @@ def cleanup_already_warned(offenders, warned_file):
     return
 
 def remove_already_warned(offenders, warned_file):
+    """Remove already warned addresses from list of offenders. Addresses already warned are to be found in a file on a disk. Return list of offenders which were not warned yet.
+
+    Arguments:
+    offenders -- list of email addresses which offended the limit
+    warned_file -- path to a file which contains pickeled list of already warned email addresses."""
     if not exists(warned_file):
         pickle.dump([], open(warned_file, "wb" ))
         already_warned = []
+        logging.debug("Creating warned_file.")
     else:
         already_warned = pickle.load(open(warned_file, "rb"))
         logging.debug("Already warned: {0}".format(already_warned))
@@ -174,6 +187,14 @@ def remove_already_warned(offenders, warned_file):
     return offenders
 
 def send_email(to, subject, body, outgoing, exceptions = None):
+    """Send an email if sender is not on blacklist. If whitelist exists, then send only to addresses present in whitelist file and absent from blacklist file.
+
+    Arguments:
+    to -- receiving email adress
+    subject -- subject of the email
+    body -- body of the email
+    outgoing -- dictionary of conf_file [Outgoing] section
+    exceptions -- dictionary of conf_file [Exceptions] section"""
     if exceptions is not None:
         if to in exceptions['blacklist']:
             return
@@ -195,6 +216,7 @@ def send_email(to, subject, body, outgoing, exceptions = None):
     s.quit()
 
 def parse_exceptions(exceptions):
+    """Extract list of whitelisted and blacklisted email addresses from files noted in [Exceptions] section of conf_file."""
     whitelist = []
     blacklist = []
 
@@ -211,6 +233,14 @@ def parse_exceptions(exceptions):
     return {'whitelist': whitelist, 'blacklist': blacklist}
     
 def warn(to_be_warned, limits, exceptions, account, outgoing):
+    """Warn offenders.
+
+    Arguments:
+    to_be_warned -- list of email addresses to be warned
+    limits -- dictionary of conf_file [Limits] section
+    exceptions -- dictionary of conf_file [Exceptions] section
+    account -- dictionary of conf_file [Account] section
+    outgoing -- dictionary of conf_file [Outgoing] section"""
     if not to_be_warned:
         logging.debug('Nobody to be warned')
         return
@@ -242,6 +272,7 @@ def warn(to_be_warned, limits, exceptions, account, outgoing):
     return
 
 def main():
+    """Main function of the script. Execution starts here."""
     argparser = optparse.OptionParser(description='Warn people who write too much.')
 
     argparser.add_option('-c', '--conf_file', dest='conf_file', help='path to config file')
@@ -269,7 +300,6 @@ def main():
     
     offenders = get_offenders(account, limits)
     logging.debug("Offenders: {0}.".format(offenders))
-
 
     cleanup_already_warned(offenders, limits['warned_file'])
 
