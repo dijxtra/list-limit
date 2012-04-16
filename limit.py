@@ -256,10 +256,10 @@ def warn(to_be_warned, limits, exceptions, account, outgoing):
     
     lists = parse_exceptions(exceptions)
     
-    if 'report_address' in limits:
+    if 'report_addresses' in limits:
         f = open(limits['report_file'], "r")
         report_template = Template(f.read())
-        report_email = limits['report_address']
+        report_emails = limits['report_addresses'].split(',')
     else:
         report_template = None
         
@@ -268,10 +268,9 @@ def warn(to_be_warned, limits, exceptions, account, outgoing):
         text = Template(f.read())
         warning = text.substitute(to=t, email=t, limit=limits['count'])
         if report_template is not None:
-            report = report_template.substitute(to=report_email, email=t, limit=limits['count'])
-#            logging.info('Sending report about user {email}'.format(email=t))
-            send_email(report_email, "Report", report, outgoing)
-#        logging.info('Sending warning to user {email}'.format(email=t))
+            for report_email in report_emails:
+                report = report_template.substitute(to=report_email, email=t, limit=limits['count'])
+                send_email(report_email, "Report", report, outgoing)
         send_email(t, "Warning", warning, outgoing, lists)
 
     already_warned = pickle.load(open(limits['warned_file'], "rb"))

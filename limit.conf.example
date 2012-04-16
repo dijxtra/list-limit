@@ -17,7 +17,7 @@ start_hour=8
 count=3
 warned_file=warned.p
 warning_file=warning.eml
-report_addresses=['mailinglist.owner@gmail.com']
+report_addresses=mailinglist.owner@gmail.com,someotherguy@gmail.com
 report_file=report.eml
 
 [Exceptions]
