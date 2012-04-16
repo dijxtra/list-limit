@@ -68,10 +68,12 @@ def get_author_freqs(account, start):
     M = imaplib.IMAP4_SSL(account['host'], int(account['port']))
     M.login(account['username'], account['password'])
     M.select()
+    logging.debug("Searching for mails.")
     typ, data = M.search(None, '(SENTSINCE {date})'.format(date=start.strftime("%d-%b-%Y"))) #fetching emails sent after midnight (IMAP can search only by date, not by time)
 
     freq = collections.defaultdict(int)
     for num in data[0].split(): #for each email
+        logging.debug("Fetching mail {0}.".format(num))
         typ, from_data = M.fetch(num, '(BODY[HEADER.FIELDS (FROM)])')
         typ, to_data = M.fetch(num, '(BODY[HEADER.FIELDS (TO)])')
         typ, date_data = M.fetch(num, '(BODY[HEADER.FIELDS (DATE)])')
@@ -85,8 +87,10 @@ def get_author_freqs(account, start):
         if (account['list'] == to or account['list'] == '') and in_this_cycle(date, start):
             freq[mail] += 1
 
+    logging.debug("Closing connection.")
     M.close()
     M.logout()
+    logging.debug("Closed.")
 
     return freq
 
@@ -202,7 +206,7 @@ def send_email(to, subject, body, outgoing, exceptions = None):
         if exceptions['whitelist'] and not to in exceptions['whitelist']:
             return
 
-    logging.info("Sending {subject} to {email}.".format(subject, to))
+    logging.info("Preparing {subject} to {email}.".format(subject=subject, email=to))
 
     msg = MIMEText(body)
     msg['Subject'] = subject
@@ -210,9 +214,11 @@ def send_email(to, subject, body, outgoing, exceptions = None):
     msg['To'] = to
 
     s = smtplib.SMTP(outgoing['host'] + ':' + outgoing['port'])
-    s.login(outgoing['username'], outgoing['password'])
     s.starttls()
-    s.sendmail(outgoing['email'], [to], msg.as_string())
+    s.login(outgoing['username'], outgoing['password'])
+    if outgoing['block_sending'] != 'yes':
+        logging.info("Sending {subject} to {email}.".format(subject=subject, email=to))
+#        s.sendmail(outgoing['email'], [to], msg.as_string())
     s.quit()
 
 def parse_exceptions(exceptions):

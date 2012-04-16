@@ -11,6 +11,7 @@ port=587
 username=mailinglist.archive
 password=secret
 email=mailinglist.owner@gmail.com
+block_sending=yes
 
 [Limits]
 start_hour=8
