@@ -208,7 +208,7 @@ def send_email(to, subject, body, outgoing, exceptions = None):
         if to in exceptions['blacklist']:
             return
 
-        if exceptions['whitelist'] and not to in exceptions['whitelist']:
+        if exceptions['whitelist'] and not (to in exceptions['whitelist']):
             return
 
 
