@@ -2,4 +2,4 @@ BUGS:
 * if current time is before Config.get('Limits', 'start_hour'), get_author_freqs returns empty list (current cycle has not started yet)
 
 FEATURES:
-* whitelist/blacklist
+* binary search first mail in the cycle (currently we parse 24+ hours of email)

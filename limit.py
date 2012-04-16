@@ -130,8 +130,7 @@ def in_this_cycle(date, start):
     return mktime(date) > mktime(start.timetuple())
 
 def get_offenders(account, limits):
-    """Return list of emails offending the "number of mails daily" limit on a given mailing list.
-"""
+    """Return list of emails offending the "number of mails daily" limit on a given mailing list."""
     start_time = get_start_time(int(limits['start_hour']))
     
 #    freqs = stub_get_author_freqs(account, start_time)
@@ -143,11 +142,27 @@ def get_offenders(account, limits):
     
     return offenders
 
+def get_counts(account, limits, min_count=0):
+    """Return list of tuplets of emails and mail counts on a given mailing list."""
+    start_time = get_start_time(int(limits['start_hour']))
+    
+    freqs = get_author_freqs(account, start_time)
+
+    return filter(lambda t: t[1] > min_count, leaderboard(freqs))
+
 def print_leaderboard(freqs):
     """Print to the STDOUT list of authors with their current mail-count"""
     print "Leaderboard:"
     for f in sorted(freqs, key=freqs.get, reverse=True):
         print f, freqs[f]
+
+def leaderboard(freqs):
+    """Return list of authors with their current mail-count"""
+    retval = []
+    for f in sorted(freqs, key=freqs.get, reverse=True):
+        retval.append((f, freqs[f]))
+
+    return retval
 
 def cleanup_already_warned(offenders, warned_file):
     """Remove addresses which are not offending anymore from list of already warned addresses. Addresses already warned are to be found in a file on a disk.
@@ -284,6 +299,8 @@ def main():
     argparser = optparse.OptionParser(description='Warn people who write too much.')
 
     argparser.add_option('-c', '--conf_file', dest='conf_file', help='path to config file')
+    argparser.add_option('-l', '--list', action="store_true", dest='just_list', help='just list mail counts and exit', default=False)
+    argparser.add_option('-L', '--list-counts', dest='list_counts', help='just list mail counts greater than LIST_COUNTS and exit', default=False)
 
     (options, args) = argparser.parse_args()
 
@@ -305,7 +322,18 @@ def main():
         level=numeric_level)
 
     logging.debug('Started list-limit.')
-    
+
+    if options.list_counts:
+        counts = get_counts(account, limits, int(options.list_counts))
+        for c in counts:
+            print str(c[1]).rjust(2) + '  ' + c[0]
+        exit()
+    if options.just_list:
+        counts = get_counts(account, limits)
+        for c in counts:
+            print str(c[1]).rjust(2) + '  ' + c[0]
+        exit()
+
     offenders = get_offenders(account, limits)
     logging.debug("Offenders: {0}.".format(offenders))
 
