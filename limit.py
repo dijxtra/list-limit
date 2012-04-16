@@ -72,8 +72,13 @@ def get_author_freqs(account, start):
     typ, data = M.search(None, '(SENTSINCE {date})'.format(date=start.strftime("%d-%b-%Y"))) #fetching emails sent after midnight (IMAP can search only by date, not by time)
 
     freq = collections.defaultdict(int)
-    for num in data[0].split(): #for each email
-        logging.debug("Fetching mail {0}.".format(num))
+    mails = data[0].split()
+    num_mails = len(mails)
+    i = 0
+    logging.debug("{0} mails found.".format(num_mails))
+    for num in mails: #for each email
+        i+=1
+        logging.debug("Fetching mail {0} [{1} of {2}].".format(num, i, num_mails))
         typ, from_data = M.fetch(num, '(BODY[HEADER.FIELDS (FROM)])')
         typ, to_data = M.fetch(num, '(BODY[HEADER.FIELDS (TO)])')
         typ, date_data = M.fetch(num, '(BODY[HEADER.FIELDS (DATE)])')
@@ -206,7 +211,6 @@ def send_email(to, subject, body, outgoing, exceptions = None):
         if exceptions['whitelist'] and not to in exceptions['whitelist']:
             return
 
-    logging.info("Preparing {subject} to {email}.".format(subject=subject, email=to))
 
     msg = MIMEText(body)
     msg['Subject'] = subject
@@ -216,9 +220,8 @@ def send_email(to, subject, body, outgoing, exceptions = None):
     s = smtplib.SMTP(outgoing['host'] + ':' + outgoing['port'])
     s.starttls()
     s.login(outgoing['username'], outgoing['password'])
-    if outgoing['block_sending'] != 'yes':
-        logging.info("Sending {subject} to {email}.".format(subject=subject, email=to))
-#        s.sendmail(outgoing['email'], [to], msg.as_string())
+    logging.info("Sending {subject} to {email}.".format(subject=subject, email=to))
+#    s.sendmail(outgoing['email'], [to], msg.as_string())
     s.quit()
 
 def parse_exceptions(exceptions):
@@ -266,9 +269,9 @@ def warn(to_be_warned, limits, exceptions, account, outgoing):
         warning = text.substitute(to=t, email=t, limit=limits['count'])
         if report_template is not None:
             report = report_template.substitute(to=report_email, email=t, limit=limits['count'])
-            logging.info('Sending report about user {email}'.format(email=t))
+#            logging.info('Sending report about user {email}'.format(email=t))
             send_email(report_email, "Report", report, outgoing)
-        logging.info('Sending warning to user {email}'.format(email=t))
+#        logging.info('Sending warning to user {email}'.format(email=t))
         send_email(t, "Warning", warning, outgoing, lists)
 
     already_warned = pickle.load(open(limits['warned_file'], "rb"))
