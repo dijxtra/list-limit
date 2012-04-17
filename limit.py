@@ -57,6 +57,30 @@ def stub_get_author_freqs(account, start):
     """A stub returning what get_autho_freqs would return. Used for testing when Internet connection is not available."""
     return {'nskoric@gmail.com' : 3, 'burek@pita.net' : 4, 'john@microsoft.com' : 1, 'mike@microsoft.com' : 5}
 
+def find_first_mail(mails, start, M, first, last):
+    """Binary search through mails and find first mail sent after start.
+
+    Arguments:
+    mails -- list of emails to be searched
+    start -- start of current cycle: we count emails sent after this moment in time
+    M -- connection to mail server
+    first -- index of lower bound
+    last -- index of upper bound
+    """
+    logging.debug("Searching for first mail between indexes {0} and {1}.".format(first, last))
+
+    if (first + 1 == last):
+        return last
+    
+    num = (first + last) / 2
+    
+    typ, date_data = M.fetch(mails[num], '(BODY[HEADER.FIELDS (DATE)])')
+    date = date_data[0][1]
+    if in_this_cycle(date, start):
+        return find_first_mail(mails, start, M, first, num)
+    else:
+        return find_first_mail(mails, start, M, num, last)
+
 def get_author_freqs(account, start):
     """Connect to IMAP mail server, retreive mails and create dictionary of author frequencies.
 
@@ -74,9 +98,13 @@ def get_author_freqs(account, start):
     freq = collections.defaultdict(int)
     mails = data[0].split()
     num_mails = len(mails)
-    i = 0
     logging.debug("{0} mails found.".format(num_mails))
-    for num in mails: #for each email
+
+    start_mail = find_first_mail(mails, start, M, 0, num_mails)
+    logging.debug("First mail in this cycle is: {0}.".format(start_mail))
+
+    i = start_mail - 1
+    for num in mails[start_mail - 1:]: #for each email
         i+=1
         logging.debug("Fetching mail {0} [{1} of {2}].".format(num, i, num_mails))
         typ, from_data = M.fetch(num, '(BODY[HEADER.FIELDS (FROM)])')
@@ -114,6 +142,10 @@ def get_start_time(hours):
     d = datetime.today()
     midnight = datetime.combine(d, time())
 
+    if (midnight + td) >= datetime.now():
+        midnight -= timedelta(1) # minus one day
+
+    logging.info("Starting point is {0}".format(midnight + td))
     return (midnight + td)
 
 def in_this_cycle(date, start):
