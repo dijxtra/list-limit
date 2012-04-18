@@ -268,7 +268,7 @@ def send_email(to, subject, body, outgoing, exceptions = None):
     s.starttls()
     s.login(outgoing['username'], outgoing['password'])
     logging.info("Sending {subject} to {email}.".format(subject=subject, email=to))
-#    s.sendmail(outgoing['email'], [to], msg.as_string())
+    s.sendmail(outgoing['email'], [to], msg.as_string())
     s.quit()
 
 def parse_exceptions(exceptions):
