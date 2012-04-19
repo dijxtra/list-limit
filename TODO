@@ -1,1 +1,5 @@
-Send report even when not sending warning to blacklisted / not whitelisted people.
+FEATURES:
+* Send report even when not sending warning to blacklisted / not whitelisted people.
+
+BUGS:
+* Script operates in server's local time zone: add timezone config option
