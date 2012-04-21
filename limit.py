@@ -26,7 +26,7 @@ To contact the author, see http://github.com/dijxtra/list-limit
 """
 import imaplib, collections, ConfigParser, pickle, smtplib, logging, optparse
 from datetime import time, timedelta, datetime
-from time import mktime
+from time import mktime, localtime, timezone
 from email.mime.text import MIMEText
 from email.utils import parseaddr, parsedate
 from os.path import exists
@@ -352,6 +352,9 @@ def main():
         format='[%(asctime)s] %(levelname)s:%(message)s',
         filename=log['log_file'],
         level=numeric_level)
+
+    timezone = -3600 * int(account['timezone'])
+    logging.Formatter.converter = localtime
 
     logging.debug('Started list-limit.')
 

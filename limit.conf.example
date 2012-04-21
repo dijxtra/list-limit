@@ -4,6 +4,7 @@ port=993
 username=mailinglist.archive
 password=secret
 list=mailinglist@googlegroups.com
+timezone=+1
 
 [Outgoing]
 host=smtp.gmail.com
