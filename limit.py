@@ -24,9 +24,9 @@ Please see the GPL license at http://www.gnu.org/licenses/gpl.txt
 
 To contact the author, see http://github.com/dijxtra/list-limit
 """
-import imaplib, collections, ConfigParser, pickle, smtplib, logging, optparse
+import imaplib, collections, ConfigParser, pickle, smtplib, logging, optparse, os
 from datetime import time, timedelta, datetime
-from time import mktime, gmtime
+from time import mktime, tzset
 from email.mime.text import MIMEText
 from email.utils import parseaddr, parsedate
 from os.path import exists
@@ -326,9 +326,6 @@ def warn(to_be_warned, limits, exceptions, account, outgoing):
 
     return
 
-class MyFormatter(logging.Formatter):
-    converter = gmtime
-
 def main():
     """Main function of the script. Execution starts here."""
     argparser = optparse.OptionParser(description='Warn people who write too much.')
@@ -356,7 +353,8 @@ def main():
         filename=log['log_file'],
         level=numeric_level)
 
-    logging.Formatter = MyFormatter
+    os.environ['TZ'] = account['timezone']
+    tzset()
 
     logging.debug('Started list-limit.')
 
