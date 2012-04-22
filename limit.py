@@ -242,8 +242,8 @@ def remove_already_warned(offenders, warned_file):
 
     return offenders
 
-def send_email(to, subject, body, outgoing, exceptions = None):
-    """Send an email if sender is not on blacklist. If whitelist exists, then send only to addresses present in whitelist file and absent from blacklist file.
+def send_email(to, subject, body, outgoing):
+    """Send an email honouring whitelist/blacklist rules.
 
     Arguments:
     to -- receiving email adress
@@ -251,14 +251,6 @@ def send_email(to, subject, body, outgoing, exceptions = None):
     body -- body of the email
     outgoing -- dictionary of conf_file [Outgoing] section
     exceptions -- dictionary of conf_file [Exceptions] section"""
-    if exceptions is not None:
-        if to in exceptions['blacklist']:
-            return
-
-        if exceptions['whitelist'] and not (to in exceptions['whitelist']):
-            return
-
-
     msg = MIMEText(body)
     msg['Subject'] = subject
     msg['From'] = outgoing['email']
@@ -270,6 +262,23 @@ def send_email(to, subject, body, outgoing, exceptions = None):
     logging.info("Sending {subject} to {email}.".format(subject=subject, email=to))
     s.sendmail(outgoing['email'], [to], msg.as_string())
     s.quit()
+
+def sending_allowed(to, exceptions):
+    """Return False if sender is in blacklist. Return False if whitelist exists and sender is not in it. Otherwise return True.
+
+    Arguments:
+    to -- receiving email adress
+    exceptions -- dictionary of conf_file [Exceptions] section"""
+    
+    if exceptions is not None:
+        if to in exceptions['blacklist']:
+            return False;
+
+        if exceptions['whitelist'] and not (to in exceptions['whitelist']):
+            return False;
+
+    return True;
+    
 
 def parse_exceptions(exceptions):
     """Extract list of whitelisted and blacklisted email addresses from files noted in [Exceptions] section of conf_file."""
@@ -318,7 +327,8 @@ def warn(to_be_warned, limits, exceptions, account, outgoing):
             for report_email in report_emails:
                 report = report_template.substitute(to=report_email, email=t, limit=limits['count'])
                 send_email(report_email, "Report", report, outgoing)
-        send_email(t, "Warning", warning, outgoing, lists)
+        if sending_allowed(t, lists):
+            send_email(t, "Warning", warning, outgoing)
 
     already_warned = pickle.load(open(limits['warned_file'], "rb"))
     already_warned.extend(to_be_warned)
