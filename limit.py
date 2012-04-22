@@ -26,7 +26,7 @@ To contact the author, see http://github.com/dijxtra/list-limit
 """
 import imaplib, collections, ConfigParser, pickle, smtplib, logging, optparse
 from datetime import time, timedelta, datetime
-from time import mktime, localtime, timezone
+from time import mktime, gmtime
 from email.mime.text import MIMEText
 from email.utils import parseaddr, parsedate
 from os.path import exists
@@ -326,6 +326,9 @@ def warn(to_be_warned, limits, exceptions, account, outgoing):
 
     return
 
+class MyFormatter(logging.Formatter):
+    converter = gmtime
+
 def main():
     """Main function of the script. Execution starts here."""
     argparser = optparse.OptionParser(description='Warn people who write too much.')
@@ -353,8 +356,7 @@ def main():
         filename=log['log_file'],
         level=numeric_level)
 
-    timezone = -3600 * int(account['timezone'])
-    logging.Formatter.converter = localtime
+    logging.Formatter = MyFormatter
 
     logging.debug('Started list-limit.')
 
